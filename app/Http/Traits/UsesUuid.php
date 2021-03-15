@@ -7,6 +7,9 @@ use Illuminate\Support\Str;
 trait UsesUuid
 {
 
+    /**
+     * Generate UUIDs instead of integers for primary keys
+     */
     protected static function bootUsesUuid() {
         static::creating(function ($model) {
             if (! $model->getKey()) {

@@ -3,13 +3,10 @@
 namespace App\Console;
 
 use App\Models\Comment;
-use Faker\Provider\DateTime;
-use Faker\Provider\en_US\Text;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
-use Ramsey\Uuid\Uuid;
 
 class Kernel extends ConsoleKernel
 {
@@ -32,6 +29,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
 
+        $redis_mysql_cron = env("REDIS_MYSQL_CRON", '* * * * *');
         // Sync from Redis to MySQL
         $schedule->call(function(){
             Log::info('Starting Redis dump');
@@ -67,13 +65,14 @@ class Kernel extends ConsoleKernel
             }
             Log::info('Finished Redis Dump, Records Deleted: ' . $processed);
 
-        })->cron('* * * * *');
+        })->cron($redis_mysql_cron);
 
         // Clean up Redis entries not accessed for the last X mins
         $schedule->call(function(){
             Log::info('Starting Redis Cleanup');
+            $processing_interval = env('REDIS_CACHE_CLEANUP', 5);
             $processed = 0;
-            $score = time() - (60 * 5);
+            $score = time() - (60 * $processing_interval);
             try {
                 $items = Redis::zRangeByScore('comments:accessed', 0, $score, ['withscores' => TRUE]);
 
@@ -84,7 +83,7 @@ class Kernel extends ConsoleKernel
                 Log::error($e);
             }
             Log::info('Redis Cleanup Complete, Records cleared: ' . $processed);
-        })->everyFiveMinutes();
+        })->cron('* * * * *');
     }
 
     /**
