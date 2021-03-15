@@ -39,7 +39,7 @@ class Kernel extends ConsoleKernel
             Log::info('Updating Data');
             while($data = Redis::rpop('save:db')){
                 try {
-                    $row    = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+                    $row    = json_decode($data, true);
                     $class  = $row['model'];
                     $record = $row['object'];
                     $class::upsert($record, $record);
@@ -55,7 +55,7 @@ class Kernel extends ConsoleKernel
             $processed = 0;
             while($data = Redis::rpop('delete:db')){
                 try {
-                    $row    = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+                    $row    = json_decode($data, true);
                     $class  = $row['model'];
                     $record = $row['object'];
                     $class::destroy($record);
@@ -84,7 +84,7 @@ class Kernel extends ConsoleKernel
                 Log::error($e);
             }
             Log::info('Redis Cleanup Complete, Records cleared: ' . $processed);
-        })->cron('* * * * *');
+        })->everyFiveMinutes();
     }
 
     /**
