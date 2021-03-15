@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 
 trait UsesUuid
 {
+
     protected static function bootUsesUuid() {
         static::creating(function ($model) {
             if (! $model->getKey()) {
@@ -14,12 +15,20 @@ trait UsesUuid
         });
     }
 
-    public function getIncrementing()
+    /**
+     * Remove the autoincrement of ID seeing as we are using UUIDs
+     * @return bool
+     */
+    public function getIncrementing(): bool
     {
         return false;
     }
 
-    public function getKeyType()
+    /**
+     * Set the primary key type to string, because we are using UUIDs
+     * @return string
+     */
+    public function getKeyType(): string
     {
         return 'string';
     }

@@ -58,8 +58,8 @@ class Kernel extends ConsoleKernel
                     $row    = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
                     $class  = $row['model'];
                     $record = $row['object'];
-                    $class::delete($record);
-                    Log::info('Delete: ' . $row['model']);
+                    $class::destroy($record);
+                    Log::info('Delete: ' . $row['model'] . ' - ' . $row['object']);
                     $processed++;
                 } catch (\Exception $e) {
                     Log::error($e);

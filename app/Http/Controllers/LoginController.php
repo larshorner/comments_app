@@ -5,7 +5,9 @@ use App\Models\User;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller{
@@ -19,7 +21,13 @@ class LoginController extends Controller{
         return view('auth.login');
     }
 
-    public function authenticate(Request $request){
+    /**
+     * Authenticate a user from the DB, if the user does not exist create the new user
+     * @param Request $request
+     * @return Application|RedirectResponse|Redirector
+     */
+    public function authenticate(Request $request)
+    {
         $credentials = $request->only('email');
         $user        = User::where('email', $credentials['email'])->first();
         if(empty($user)){
@@ -38,8 +46,8 @@ class LoginController extends Controller{
     /**
      * Destroy an authenticated session.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @param Request $request
+     * @return RedirectResponse
      */
     public function destroy(Request $request)
     {

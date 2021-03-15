@@ -15,8 +15,14 @@ class Comment extends AppModel
 
     protected $fillable = ['user_id','title','text'];
 
-    public static function GetRecord($id){
-        $comment  = Redis::hmgetall('comment:' . $id);
+    /**
+     * Retrieve a comment from Redis
+     * @param $id
+     * @return array
+     */
+    public static function GetRecord($id): array
+    {
+        $comment  = Redis::hgetall('comment:' . $id);
         $likes    = Redis::get('comment:' . $id . ':likes');
         $rank     = Redis::zrank('comments:ordered', $id);
         $accessed = Redis::zrank('comments:accessed', $id);
@@ -29,6 +35,11 @@ class Comment extends AppModel
         ];
     }
 
+    /**
+     * Save a record to Redis table and submit for sync to MySQL
+     * @param array $comment
+     * @return array
+     */
     public static function SaveRecord(Array $comment): array
     {
         $new_comment = self::NewRecord();
@@ -38,7 +49,7 @@ class Comment extends AppModel
         Redis::hmset('comment:' . $comment['id'], $comment);
         Redis::zadd('comments:ordered', $time, $comment['id']);
         Redis::zadd('comments:accessed', $time, $comment['id']);
-        Redis::set('comment:' . $comment['id'] . ':likes', 0);
+        Redis::set('comment:' . $comment['id'] . ':likes', $comment['likes']??0);
 
         $save = [
             'model'  => self::class,
@@ -50,7 +61,13 @@ class Comment extends AppModel
         return $comment;
     }
 
-    public static function UncacheRecord($id){
+    /**
+     * Remove a comment from the Redis Cache
+     * @param $id
+     * @return bool
+     */
+    public static function UncacheRecord($id): bool
+    {
         try {
             Redis::del('comment:' . $id);
             Redis::del('comment:' . $id . ':likes');
@@ -64,9 +81,14 @@ class Comment extends AppModel
         }
     }
 
-    public static function RecacheRecord($id){
+    /**
+     * Find the item from the DB and recache it in Redis
+     * @param $id
+     * @return array
+     */
+    public static function RecacheRecord($id): array
+    {
         $comment = self::find($id);
-        dump($comment);
         if(!empty($comment)){
             $comment = $comment->toArray();
             $time    = strtotime($comment['created_at']);
@@ -81,12 +103,23 @@ class Comment extends AppModel
         return [];
     }
 
+    /**
+     * Update the Likes count for a comment
+     * @param $id
+     * @return mixed
+     */
     public static function updateLikes($id){
         Redis::incr('comment:' . $id . ':likes');
         return Redis::get('comment:' . $id . ':likes');
     }
 
-    public static function RemoveRecord($id){
+    /**
+     * Remove a comment and submit it for removal from MySQL
+     * @param $id
+     * @return bool
+     */
+    public static function RemoveRecord($id): bool
+    {
         try {
             Redis::del('comment:' . $id);
             Redis::del('comment:' . $id . ':likes');
@@ -107,6 +140,10 @@ class Comment extends AppModel
         }
     }
 
+    /**
+     * Generates a new Comment empty array
+     * @return array
+     */
     private static function NewRecord(): array
     {
         return [

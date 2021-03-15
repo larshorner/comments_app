@@ -6,6 +6,7 @@ use App\Models\Comment;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,10 @@ use Ramsey\Uuid\Uuid;
 
 class CommentsController extends Controller
 {
+    /**
+     * Show the list of comments
+     * @return Application|Factory|View
+     */
     public function index(){
         $comments    = [];
         $comment_ids = Redis::zRevRange('comments:ordered', 0, 19);
@@ -42,6 +47,7 @@ class CommentsController extends Controller
     }
 
     /**
+     * Create a new Comment
      * @return Application|Factory|View
      */
     public function create(){
@@ -49,6 +55,7 @@ class CommentsController extends Controller
     }
 
     /**
+     * Save the new comment into Redis
      * @param Request $request
      * @return Application|RedirectResponse|Redirector
      */
@@ -64,12 +71,26 @@ class CommentsController extends Controller
         return redirect('/comments');
     }
 
-    public function like($id){
+    /**
+     * Like the comment
+     * @param $id
+     * @return JsonResponse
+     */
+    public function like($id): JsonResponse
+    {
         return response()->json(['likes' => Comment::updateLikes($id)]);
     }
 
-    public function destroy($id){
-        if(Comment::RemoveRecord($id)){
+    /**
+     * Delete a Comment
+     * @param $id
+     * @return Application|RedirectResponse|Redirector
+     */
+    public function destroy($id)
+    {
+        $comment = Comment::GetRecord($id);
+        if(!empty($comment['comment']['user_id']) && $comment['comment']['user_id'] === Auth::user()->id){
+            Comment::RemoveRecord($id);
             return redirect('/comments');
         }
 
